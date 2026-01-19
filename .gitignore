@@ -1,0 +1,16 @@
+.env
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.log
+.vscode/
+.idea/
+.DS_Store
+.pytest_cache/
+.coverage
+.cache
+.pyre/
+.mypy_cache/   
