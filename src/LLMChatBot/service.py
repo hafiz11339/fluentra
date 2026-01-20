@@ -4,77 +4,43 @@ from src.settings import settings
 from src.response import BuildJSONResponses
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
-
-SYSTEM_PROMPT = """You are not a chatbot, a productivity tool, or a technical assistant.
-You are a calm, patient teacher explaining things to a 6th-standard student.
-
-Core Behavior
-
-Speak slowly, calmly, and patiently
-
-Use very simple, clear language
-
-Never rush the student
-
-Never assume prior knowledge
-
-Never shame, judge, or pressure
-
-If something is unclear, ask one gentle follow-up question before continuing
-
-Tone & Voice
-
-Warm and reassuring
-
-Honest and friendly
-
-Non-technical unless the student asks
-
-Simple explanations with short sentences
-
-Compact answers only
-
-Avoid
-
-Buzzwords or hype
-
-Corporate, AI, or marketing language
-
-Overconfidence or sounding “expert heavy”
-
-Restrictions
-
-Do not give legal, medical, or financial advice as facts
-
-Do not replace professionals
-
-Do not push products, upgrades, or payments
-
-Do not prolong the conversation intentionally
-
-Do not overwhelm the student with extra or unasked steps
-
-Always explain like a real 9th-grade teacher, using one simple example if helpful, and keep the answer short and easy to understand.
-
-Message Start Rules (Very Strict)
-
-Do not begin with greetings or politeness.
-Do not say: Hello, Hi, Hey, Welcome, That's a great question, Good question.
-Do not use filler sentences.
-Start directly with the explanation in the first sentence.
-"""
-
+from src.LLMChatBot.prompt import SYSTEM_PROMPT
+from src.LLMChatBot.models import LLMKeys
+from src.LLMChatBot.utils import encrypt_text, decrypt_text
+from sqlalchemy import select
+from typing import Optional
 
 class ChatService:
-    def __init__(self):
-        load_dotenv()
-        api_key = settings.OPENAI_API_KEY
+    def __init__(self, db):
+        self.db = db
+        self.model = LLMKeys
+        self.chat: Optional[ChatOpenAI] = None
+
+    async def _fetch_plain_key(self):
+        result = await self.db.execute(select(self.model))
+        row = result.scalars().first()
+        if not row or not row.open_ai_key:
+            return None
+        try:
+            return decrypt_text(row.open_ai_key)
+        except Exception:
+            return None
+
+    async def load_api_key(self):
+        if self.chat is not None:
+            return
+
+        api_key = await self._fetch_plain_key()
+
         if not api_key:
-            raise RuntimeError("OPENAI_API_KEY not set in .env")
+            raise RuntimeError("OPENAI API key not set in settings or DB")
+
         os.environ["OPENAI_API_KEY"] = api_key
         self.chat = ChatOpenAI(model_name="gpt-5-mini", temperature=0.2)
 
     async def llm_chat(self, message: str) -> str:
+        await self.load_api_key()
+
         messages = [SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content=message)]
         try:
             resp = await self.chat.agenerate([[messages[0], messages[1]]])
@@ -82,3 +48,33 @@ class ChatService:
         except Exception as e:
             return BuildJSONResponses.raise_exception(str(e))
         return BuildJSONResponses.success_response(text, "LLM chat response")
+    
+    async def save_llm_key(self, message: str) -> str:
+        try:
+            encrypted = encrypt_text(message)
+            data = self.model(
+                open_ai_key=encrypted
+            )
+            self.db.add(data)
+            await self.db.commit()
+            await self.db.refresh(data)
+            return BuildJSONResponses.success_response(
+                None, "Key Added Successfully"
+            )
+
+        except Exception as e:
+            return BuildJSONResponses.raise_exception(str(e))
+
+    async def get_llm_key(self) -> str:
+        try:
+            result = await self.db.execute(select(self.model))
+            row = result.scalars().first()
+            if not row or not row.open_ai_key:
+                return BuildJSONResponses.raise_exception("No LLM key found")
+            try:
+                decrypted = decrypt_text(row.open_ai_key)
+            except Exception as e:
+                return BuildJSONResponses.raise_exception(f"Decryption failed: {e}")
+            return BuildJSONResponses.success_response(decrypted, "Key fetched successfully")
+        except Exception as e:
+            return BuildJSONResponses.raise_exception(str(e))

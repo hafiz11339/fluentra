@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,7 +16,8 @@ class Settings(BaseSettings):
     ENVIRONMET: str = "dev"
     SCHEMA_NAME: str = "public"
     ALLOWED_HOSTS: Set[str] = {"*"}
-    OPENAI_API_KEY:str
+    DATABASE_URL: str
+    ENCRYPTION_KEY: Optional[str] = None
     class Config:
         env_file = ".env"
 

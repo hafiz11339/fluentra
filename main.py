@@ -2,12 +2,18 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, status, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from src.settings import settings
+from src.database import initialize_database
+
 import uvicorn
 from src import api_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
-        pass
+        print("Initializing database...")
+
+        await initialize_database()
+        print("Database initialized.")
+
     except Exception as e:
         print("Error during initialization:", e)
         raise
