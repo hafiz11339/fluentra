@@ -31,8 +31,8 @@ app.include_router(api_router, prefix="/api")
 @app.get("/", response_model=dict, status_code=status.HTTP_200_OK)
 async def root() -> dict:
 
-    return {"message": f"Welcome to the {settings.PROJECT_NAME}"}
+    return {"message": f"Welcome to {settings.PROJECT_NAME}"}
 
 
-if __name__ == "__main__":
-    uvicorn.run(app, host=settings.SERVER_HOST, port=settings.SERVER_PORT)
+# if __name__ == "__main__":
+#     uvicorn.run(app, host=settings.SERVER_HOST, port=settings.SERVER_PORT)
