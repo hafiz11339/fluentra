@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     ENVIRONMET: str = "dev"
     SCHEMA_NAME: str = "public"
     ALLOWED_HOSTS: Set[str] = {"*"}
+    OPENAI_API_KEY:str
     class Config:
         env_file = ".env"
 
