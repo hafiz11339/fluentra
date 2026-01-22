@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: Set[str] = {"*"}
     DATABASE_URL: str
     ENCRYPTION_KEY: Optional[str] = None
+    OPENAI_KEY: Optional[str] = None
     class Config:
         env_file = ".env"
 
