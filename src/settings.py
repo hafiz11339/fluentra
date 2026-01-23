@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     ENCRYPTION_KEY: Optional[str] = None
     OPENAI_KEY: Optional[str] = None
+    OPEN_AI_MODEL: str 
+    OPEN_AI_TEMPERATURE: float 
     class Config:
         env_file = ".env"
 

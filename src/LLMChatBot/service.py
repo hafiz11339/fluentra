@@ -33,7 +33,7 @@ class ChatService:
     async def load_api_key(self):
 
         os.environ["OPENAI_API_KEY"] = settings.OPENAI_KEY
-        self.chat = ChatOpenAI(model_name="gpt-5", temperature=0.3)
+        self.chat = ChatOpenAI(model_name=settings.OPEN_AI_MODEL, temperature=settings.OPEN_AI_TEMPERATURE)
 
     async def llm_chat(self, message: str, session_id: int) -> str:
         await self.load_api_key()
